@@ -16,6 +16,7 @@ import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.model.Labels;
 import io.vertx.core.Vertx;
@@ -155,6 +156,7 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
     }
 
     @Test
+    //TODO this test is not valid under the server-side apply logic
     public void testCreateWhenExistsWithoutChangeIsNotAPatch(VertxTestContext context) {
         testCreateWhenExistsWithoutChangeIsNotAPatch(context, true);
     }
@@ -164,7 +166,7 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
         Resource mockResource = mock(resourceType());
         when(mockResource.get()).thenReturn(resource);
         when(mockResource.withPropagationPolicy(cascade ? DeletionPropagation.FOREGROUND : DeletionPropagation.ORPHAN)).thenReturn(mockResource);
-        when(mockResource.patch(any(), any())).thenReturn(resource);
+        when(mockResource.patch(any(PatchContext.class), eq(resource))).thenReturn(resource);
 
         NonNamespaceOperation mockNameable = mock(NonNamespaceOperation.class);
         when(mockNameable.withName(matches(resource.getMetadata().getName()))).thenReturn(mockResource);
@@ -180,7 +182,7 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
         Checkpoint async = context.checkpoint();
         op.createOrUpdate(Reconciliation.DUMMY_RECONCILIATION, resource()).onComplete(context.succeeding(rr -> context.verify(() -> {
             verify(mockResource).get();
-            verify(mockResource, never()).patch(any(), any());
+            verify(mockResource, never()).patch(any(PatchContext.class), eq(resource));
             verify(mockResource, never()).create();
             async.flag();
         })));
@@ -218,7 +220,7 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
         Resource mockResource = mock(resourceType());
 
         when(mockResource.get()).thenReturn(null);
-        when(mockResource.create()).thenReturn(resource);
+        when(mockResource.patch(any(PatchContext.class), eq(resource))).thenReturn(resource);
 
         NonNamespaceOperation mockNameable = mock(NonNamespaceOperation.class);
         when(mockNameable.withName(matches(resource.getMetadata().getName()))).thenReturn(mockResource);
@@ -235,7 +237,7 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
         Checkpoint async = context.checkpoint();
         op.createOrUpdate(Reconciliation.DUMMY_RECONCILIATION, resource).onComplete(context.succeeding(rr -> context.verify(() -> {
             verify(mockResource).get();
-            verify(mockResource).create();
+            verify(mockResource).patch(any(PatchContext.class), eq(resource));
             async.flag();
         })));
     }
@@ -254,7 +256,7 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
 
         MixedOperation mockCms = mock(MixedOperation.class);
         when(mockCms.inNamespace(matches(resource.getMetadata().getNamespace()))).thenReturn(mockNameable);
-        when(mockResource.create()).thenThrow(ex);
+        when(mockResource.patch(any(PatchContext.class), eq(resource))).thenThrow(ex);
 
         C mockClient = mock(clientType());
         mocker(mockClient, mockCms);
@@ -547,7 +549,8 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
 
         Resource mockResource3 = mock(resourceType());
         when(mockResource3.get()).thenReturn(null);
-        when(mockResource3.create()).thenReturn(resource3);
+//        when(mockResource3.create()).thenReturn(resource3);
+        when(mockResource3.patch(any(), eq(resource3))).thenReturn(resource3);
 
         KubernetesResourceList mockResourceList = mock(KubernetesResourceList.class);
         when(mockResourceList.getItems()).thenReturn(List.of(resource1, resource2));
@@ -583,8 +586,8 @@ public abstract class AbstractNamespacedResourceOperatorTest<C extends Kubernete
             verify(mockResource2, never()).delete();
 
             verify(mockResource3, times(1)).get();
-            verify(mockResource3, never()).patch(any(), any());
-            verify(mockResource3, times(1)).create();
+            verify(mockResource3, times(1)).patch(any(), eq(resource3));
+            verify(mockResource3, never()).create();
             verify(mockResource3, never()).delete();
 
             async.flag();

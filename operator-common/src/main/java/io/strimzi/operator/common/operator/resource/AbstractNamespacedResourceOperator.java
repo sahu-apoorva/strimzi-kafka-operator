@@ -14,8 +14,6 @@ import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.kubernetes.client.dsl.Informable;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.PatchContext;
-import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.ReconciliationLogger;
@@ -98,6 +96,7 @@ public abstract class AbstractNamespacedResourceOperator<C extends KubernetesCli
             return Future.failedFuture("Given name " + name + " incompatible with desired name " + desired.getMetadata().getName());
         }
 
+        //TODO split out 2 versions of this code block, behind feature flag
         Promise<ReconcileResult<T>> promise = Promise.promise();
         vertx.createSharedWorkerExecutor("kubernetes-ops-pool").executeBlocking(
             future -> {
@@ -261,7 +260,10 @@ public abstract class AbstractNamespacedResourceOperator<C extends KubernetesCli
      * @return  The patched or replaced resource
      */
     protected T patchOrReplace(String namespace, String name, T desired)   {
-        return operation().inNamespace(namespace).withName(name).patch(PatchContext.of(PatchType.JSON), desired);
+        return operation()
+                .inNamespace(namespace)
+                .withName(name)
+                .patch(serverSideApplyPatchContext(), desired);
     }
 
     /**
@@ -270,7 +272,11 @@ public abstract class AbstractNamespacedResourceOperator<C extends KubernetesCli
      */
     protected Future<ReconcileResult<T>> internalCreate(Reconciliation reconciliation, String namespace, String name, T desired) {
         try {
-            ReconcileResult<T> result = ReconcileResult.created(operation().inNamespace(namespace).resource(desired).create());
+            ReconcileResult<T> result = ReconcileResult.created(
+                    operation()
+                            .inNamespace(namespace)
+                            .withName(name)
+                            .patch(serverSideApplyPatchContext(), desired));
             LOGGER.debugCr(reconciliation, "{} {} in namespace {} has been created", resourceKind, name, namespace);
             return Future.succeededFuture(result);
         } catch (Exception e) {

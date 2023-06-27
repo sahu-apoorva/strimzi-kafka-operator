@@ -12,6 +12,8 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.FilterWatchListDeletable;
 import io.fabric8.kubernetes.client.dsl.Listable;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.base.PatchContext;
+import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.model.Labels;
 import io.vertx.core.Future;
@@ -97,7 +99,9 @@ public abstract class AbstractResourceOperator<C extends KubernetesClient,
      * @return          True if the resources differ and need patching
      */
     protected boolean needsPatching(Reconciliation reconciliation, String name, T current, T desired)   {
-        return !diff(reconciliation, name, current, desired).isEmpty();
+        //TODO handle the feature flag here i.e. if enabled return true
+        return true;
+//        return !diff(reconciliation, name, current, desired).isEmpty();
     }
 
     /**
@@ -173,5 +177,12 @@ public abstract class AbstractResourceOperator<C extends KubernetesClient,
      */
     protected Future<List<T>> listAsync(Listable<L> listable) {
         return resourceSupport.listAsync(listable);
+    }
+
+    protected PatchContext serverSideApplyPatchContext() {
+        return new PatchContext.Builder()
+                .withPatchType(PatchType.SERVER_SIDE_APPLY)
+                .withFieldManager("strimzi-cluster-operator") //TODO find where this is configured for the other operations that strimzi is doing
+                .withForce(true).build(); //TODO return builder to allow force to be configured
     }
 }

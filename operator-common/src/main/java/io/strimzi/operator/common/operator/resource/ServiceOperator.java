@@ -113,6 +113,7 @@ public class ServiceOperator extends AbstractNamespacedResourceOperator<Kubernet
      * @param desired   Desired Service
      */
     private void patchAnnotations(Service current, Service desired) {
+        //TODO JF can this be put behind a feature flag / removed once the work is done
         Map<String, String> currentAnnotations = current.getMetadata().getAnnotations();
         if (currentAnnotations != null) {
             Map<String, String> matchedAnnotations = currentAnnotations.keySet().stream()

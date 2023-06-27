@@ -79,6 +79,7 @@ public class ServiceOperatorIT extends AbstractNamespacedResourceOperatorIT<Kube
         context.verify(() -> assertThat(actual.getMetadata().getName(), is(expected.getMetadata().getName())));
         context.verify(() -> assertThat(actual.getMetadata().getNamespace(), is(expected.getMetadata().getNamespace())));
         context.verify(() -> assertThat(actual.getMetadata().getLabels(), is(expected.getMetadata().getLabels())));
+        context.verify(() -> assertThat(actual.getSpec().getPorts().size(), is(1)));
         context.verify(() -> assertThat(actual.getSpec().getPorts().get(0).getPort(), is(expected.getSpec().getPorts().get(0).getPort())));
     }
 }

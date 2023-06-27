@@ -530,7 +530,7 @@ public class KubeClient {
     }
 
     public void patchSecret(String namespaceName, String secretName, Secret secret) {
-        client.secrets().inNamespace(namespaceName).withName(secretName).patch(PatchContext.of(PatchType.JSON), secret);
+        client.secrets().inNamespace(namespaceName).withName(secretName).patch(PatchContext.of(PatchType.JSON), secret); //TODO JF does this need changing?
     }
 
 

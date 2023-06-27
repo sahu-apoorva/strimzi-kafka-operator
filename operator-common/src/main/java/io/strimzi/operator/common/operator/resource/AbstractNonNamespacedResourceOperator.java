@@ -10,8 +10,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
-import io.fabric8.kubernetes.client.dsl.base.PatchContext;
-import io.fabric8.kubernetes.client.dsl.base.PatchType;
 import io.strimzi.operator.common.Reconciliation;
 import io.strimzi.operator.common.ReconciliationLogger;
 import io.strimzi.operator.common.model.Labels;
@@ -181,7 +179,7 @@ public abstract class AbstractNonNamespacedResourceOperator<C extends Kubernetes
      * @return  The patched or replaced resource
      */
     protected T patchOrReplace(String name, T desired)   {
-        return operation().withName(name).patch(PatchContext.of(PatchType.JSON), desired);
+        return operation().withName(name).patch(serverSideApplyPatchContext(), desired);
     }
 
     /**
@@ -190,7 +188,7 @@ public abstract class AbstractNonNamespacedResourceOperator<C extends Kubernetes
      */
     protected Future<ReconcileResult<T>> internalCreate(Reconciliation reconciliation, String name, T desired) {
         try {
-            ReconcileResult<T> result = ReconcileResult.created(operation().resource(desired).create());
+            ReconcileResult<T> result = ReconcileResult.created(operation().withName(name).patch(serverSideApplyPatchContext(), desired));
             LOGGER.debugCr(reconciliation, "{} {} has been created", resourceKind, name);
 
             return Future.succeededFuture(result);

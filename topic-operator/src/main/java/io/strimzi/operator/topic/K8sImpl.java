@@ -89,7 +89,10 @@ public class K8sImpl implements K8s {
         Promise<KafkaTopic> handler = Promise.promise();
         vertx.executeBlocking(future -> {
             try {
-                KafkaTopic kafkaTopic = operation().inNamespace(namespace).withName(topicResource.getMetadata().getName()).patch(PatchContext.of(PatchType.JSON), topicResource);
+                KafkaTopic kafkaTopic = operation()
+                        .inNamespace(namespace)
+                        .withName(topicResource.getMetadata().getName())
+                        .patch(serverSideApplyPatchContext(), topicResource);
                 LOGGER.debug("KafkaTopic {} updated with version {}->{}",
                         kafkaTopic != null && kafkaTopic.getMetadata() != null ? kafkaTopic.getMetadata().getName() : null,
                         topicResource.getMetadata() != null ? topicResource.getMetadata().getResourceVersion() : null,
@@ -100,6 +103,13 @@ public class K8sImpl implements K8s {
             }
         }, handler);
         return handler.future();
+    }
+
+    private PatchContext serverSideApplyPatchContext() {
+        return new PatchContext.Builder()
+                .withPatchType(PatchType.SERVER_SIDE_APPLY)
+                .withFieldManager("strimzi-cluster-operator") //TODO find where this is configured for the other operations that strimzi is doing
+                .withForce(true).build(); //TODO return builder to allow force to be configured
     }
 
     /**

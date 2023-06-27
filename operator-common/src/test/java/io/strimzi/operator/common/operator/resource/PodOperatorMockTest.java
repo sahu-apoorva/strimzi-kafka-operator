@@ -66,7 +66,6 @@ public class PodOperatorMockTest {
         vertx.createSharedWorkerExecutor("kubernetes-ops-pool", 10);
         PodOperator pr = new PodOperator(vertx, client);
 
-        pr.list(NAMESPACE, Labels.EMPTY);
         context.verify(() -> assertThat(pr.list(NAMESPACE, Labels.EMPTY), is(emptyList())));
 
         Checkpoint async = context.checkpoint(1);

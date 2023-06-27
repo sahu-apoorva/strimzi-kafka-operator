@@ -63,7 +63,9 @@ public class StrimziPodSetOperator extends CrdOperator<KubernetesClient, Strimzi
      */
     @Override
     protected StrimziPodSet patchOrReplace(String namespace, String name, StrimziPodSet desired)   {
-        return operation().inNamespace(namespace).resource(desired).update();
+        //TODO put behind feature flag and then remove
+//        return operation().inNamespace(namespace).resource(desired).update();
+        return super.patchOrReplace(namespace, name, desired);
     }
 
     /**

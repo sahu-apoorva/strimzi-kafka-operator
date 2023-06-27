@@ -13,6 +13,7 @@ import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.dsl.NonNamespaceOperation;
 import io.fabric8.kubernetes.client.dsl.Resource;
+import io.fabric8.kubernetes.client.dsl.base.PatchContext;
 import io.strimzi.operator.common.Reconciliation;
 import io.vertx.core.Vertx;
 import io.vertx.core.WorkerExecutor;
@@ -133,7 +134,7 @@ public abstract class AbstractNonNamespacedResourceOperatorTest<C extends Kubern
         Resource mockResource = mock(resourceType());
         when(mockResource.get()).thenReturn(resource);
         when(mockResource.withPropagationPolicy(DeletionPropagation.FOREGROUND)).thenReturn(mockResource);
-        when(mockResource.patch(any(), any())).thenReturn(resource);
+        when(mockResource.patch(any(PatchContext.class), eq(resource))).thenReturn(resource);
 
         NonNamespaceOperation mockNameable = mock(NonNamespaceOperation.class);
         when(mockNameable.withName(matches(resource.getMetadata().getName()))).thenReturn(mockResource);
@@ -150,7 +151,7 @@ public abstract class AbstractNonNamespacedResourceOperatorTest<C extends Kubern
         op.createOrUpdate(Reconciliation.DUMMY_RECONCILIATION, resource())
                 .onComplete(context.succeeding(ar -> {
                     verify(mockResource).get();
-                    verify(mockResource, never()).patch(any(), any());
+                    verify(mockResource, never()).patch(any(PatchContext.class), eq(resource));
                     verify(mockResource, never()).create();
                     verify(mockResource, never()).create();
                     async.flag();
@@ -188,7 +189,7 @@ public abstract class AbstractNonNamespacedResourceOperatorTest<C extends Kubern
         T resource = resource();
         Resource mockResource = mock(resourceType());
         when(mockResource.get()).thenReturn(null);
-        when(mockResource.create()).thenReturn(resource);
+        when(mockResource.patch(any(PatchContext.class), eq(resource))).thenReturn(resource);
 
         NonNamespaceOperation mockNameable = mock(NonNamespaceOperation.class);
         when(mockNameable.withName(matches(resource.getMetadata().getName()))).thenReturn(mockResource);
@@ -206,7 +207,7 @@ public abstract class AbstractNonNamespacedResourceOperatorTest<C extends Kubern
         Checkpoint async = context.checkpoint();
         op.createOrUpdate(Reconciliation.DUMMY_RECONCILIATION, resource).onComplete(context.succeeding(rr -> {
             verify(mockResource).get();
-            verify(mockResource).create();
+            verify(mockResource).patch(any(PatchContext.class), eq(resource));
             async.flag();
         }));
     }
@@ -218,7 +219,8 @@ public abstract class AbstractNonNamespacedResourceOperatorTest<C extends Kubern
 
         Resource mockResource = mock(resourceType());
         when(mockResource.get()).thenReturn(null);
-        when(mockResource.create()).thenThrow(ex);
+//        when(mockResource.create()).thenThrow(ex);
+        when(mockResource.patch(any(PatchContext.class), eq(resource))).thenThrow(ex);
 
         NonNamespaceOperation mockNameable = mock(NonNamespaceOperation.class);
         when(mockNameable.withName(matches(resource.getMetadata().getName()))).thenReturn(mockResource);

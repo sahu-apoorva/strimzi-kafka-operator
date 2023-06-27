@@ -428,7 +428,10 @@ public class StrimziPodSetController implements Runnable {
                     podWithOwnerReference.getMetadata().setOwnerReferences(List.of(owner));
                 }
 
-                podOperator.client().inNamespace(reconciliation.namespace()).withName(pod.getMetadata().getName()).patch(PatchContext.of(PatchType.JSON), podWithOwnerReference);
+                podOperator.client()
+                        .inNamespace(reconciliation.namespace())
+                        .withName(pod.getMetadata().getName())
+                        .patch(serverSideApplyPatchContext(), podWithOwnerReference);
             }
 
             if (Readiness.isPodReady(currentPod))   {
@@ -442,6 +445,13 @@ public class StrimziPodSetController implements Runnable {
             // TODO: Add patching of exiting pods => to be done in the future to handle selected changes to the Pods
             //  which might not require rolling updates
         }
+    }
+
+    private PatchContext serverSideApplyPatchContext() {
+        return new PatchContext.Builder()
+                .withPatchType(PatchType.SERVER_SIDE_APPLY)
+                .withFieldManager("strimzi-cluster-operator") //TODO find where this is configured for the other operations that strimzi is doing
+                .withForce(true).build(); //TODO return builder to allow force to be configured
     }
 
     /**

@@ -1,4 +1,5 @@
-FROM strimzi/base:latest
+# Remove this, only for building locally
+FROM docker.io/jamesfarlow/strimzi-base:0.0.1
 
 LABEL org.opencontainers.image.source='https://github.com/strimzi/strimzi-kafka-operator'
 
